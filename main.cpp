@@ -1,5 +1,3 @@
-#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
-
 #include <windows.h>
 #include <iostream>
 #include <time.h>
@@ -10,13 +8,12 @@ int main(void) {
 	srand(time(NULL));
 	COLORREF mainColor;
 
-	int CountOfStep = 15000;
 	mainColor = RGB(50, 50, 50);
 
-	int width = GetSystemMetrics(SM_CXSCREEN);
-	int height = GetSystemMetrics(SM_CYSCREEN);
+	int width = GetSystemMetrics(SM_CXSCREEN) / 2;
+	int height = GetSystemMetrics(SM_CYSCREEN) / 2;
 
-	int SizeOfPart = 3;
+	int SizeOfPart = 5;
 	int padding = 1;
 
 	int c = 0;
@@ -37,35 +34,34 @@ int main(void) {
 		}
 	}
 
-	HDC dc = GetDC(NULL);
-	HWND hWnd = GetDesktopWindow();
+	HDC mainDc = GetDC(NULL);
 
+	HDC buferDc = CreateCompatibleDC(mainDc);
+	HBITMAP Bitmap = CreateCompatibleBitmap(mainDc, width, height);
 
-	HDC dcCompatible = CreateCompatibleDC(dc);
-	HBITMAP hbm = CreateCompatibleBitmap(dc, width, height);
-
-	SelectObject(dcCompatible, hbm);
+	SelectObject(mainDc, Bitmap);
+	SelectObject(buferDc, Bitmap);
 
 	HBRUSH hBrush;
 	//color = RGB(226, 124, 62);
 	hBrush = CreateSolidBrush(mainColor);
-	SelectObject(dcCompatible, hBrush);
+
+	SelectObject(buferDc, hBrush);
 
 	for (size_t y = 0; y < y_; y++) {
 		for (size_t x = 0; x < x_; x++) {
-			CreatRect(dcCompatible, x, y, SizeOfPart, width, height, padding, hbm);
+			CreatRect(buferDc, x, y, SizeOfPart, width, height, padding, Bitmap);
 		}
 	}
 
-	lengtonAnt Ant(dc, dcCompatible, hbm, x_ / 2.5, y_ / 2.5, vect_mov, width, height, padding, SizeOfPart, mainColor);
+	BitBlt(mainDc, 0, 0, width, height, buferDc, 0, 0, SRCCOPY);
 
-	for (int i = 0; i < 100 / (SizeOfPart / 2); i++) {
-		BitBlt(dc, 0, 0, width, height, dcCompatible, 0, 0, SRCCOPY);
-	}
+	lengtonAnt Ant(mainDc, buferDc, Bitmap, x_ / 2.5, y_ / 2.5, x_, y_, vect_mov, width, height, padding, SizeOfPart, mainColor);
 
-	for (int i = 0; i < CountOfStep; i++) {
-		Ant.makeMov();
-	}
+	int i = 1;
+	while(i) { i = Ant.makeMov(); }
 
+	DeleteDC(buferDc);
+	DeleteObject(Bitmap);
 	return 0;
 }
